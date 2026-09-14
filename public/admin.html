@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>后台管理 - 我的导航</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: "#172033",
+              muted: "#718096"
+            },
+            boxShadow: {
+              card: "0 18px 45px rgba(31, 41, 55, 0.09)"
+            }
+          }
+        }
+      };
+    </script>
+    <style>
+      html {
+        background: #f5f7fb;
+      }
+
+      body {
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 80% 0%, rgba(99, 102, 241, 0.12), transparent 28rem),
+          #f5f7fb;
+      }
+    </style>
+  </head>
+
+  <body class="text-ink">
+    <main class="mx-auto max-w-2xl px-5 py-12 sm:px-8">
+      <header class="mb-8 flex items-center justify-between">
+        <div>
+          <a href="/" class="text-sm text-indigo-600 hover:text-indigo-800">← 返回导航</a>
+          <h1 class="mt-3 text-3xl font-bold tracking-tight">导航后台</h1>
+          <p class="mt-2 text-sm text-muted">添加链接后，公开导航页会自动显示对应分类。</p>
+        </div>
+        <div class="hidden h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-2xl text-white shadow-lg shadow-indigo-200 sm:flex">✦</div>
+      </header>
+
+      <section id="loadingPanel" class="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-card">
+        <div class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-indigo-100 border-t-indigo-600"></div>
+        <p class="mt-4 text-sm text-muted">正在检查登录状态...</p>
+      </section>
+
+      <section id="loginPanel" class="hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-card sm:p-8">
+        <div class="mb-6">
+          <p class="text-sm font-medium text-indigo-600">ADMIN</p>
+          <h2 class="mt-2 text-2xl font-bold">登录后台</h2>
+          <p class="mt-2 text-sm text-muted">请输入管理密码以继续。</p>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <label for="password" class="text-sm font-medium text-gray-700">管理密码</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+          />
+          <p id="loginStatus" class="mt-3 min-h-5 text-sm" role="status" aria-live="polite"></p>
+          <button
+            id="loginButton"
+            type="submit"
+            class="mt-4 w-full rounded-xl bg-indigo-600 px-4 py-3 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            登录
+          </button>
+        </form>
+      </section>
+
+      <section id="appPanel" class="hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-card sm:p-8">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-indigo-600">LINKS</p>
+            <h2 class="mt-2 text-2xl font-bold">添加导航链接</h2>
+          </div>
+          <button id="logoutButton" type="button" class="rounded-lg px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-800">退出登录</button>
+        </div>
+
+        <form id="linkForm" class="mt-8 space-y-5" novalidate>
+          <div>
+            <label for="title" class="text-sm font-medium text-gray-700">标题</label>
+            <input
+              id="title"
+              name="title"
+              type="text"
+              maxlength="120"
+              required
+              placeholder="例如：GitHub"
+              class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+            />
+          </div>
+
+          <div>
+            <label for="url" class="text-sm font-medium text-gray-700">链接地址</label>
+            <input
+              id="url"
+              name="url"
+              type="url"
+              maxlength="2048"
+              required
+              placeholder="https://github.com"
+              class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+            />
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label for="category" class="text-sm font-medium text-gray-700">分类</label>
+              <input
+                id="category"
+                name="category"
+                type="text"
+                maxlength="50"
+                list="categoryOptions"
+                required
+                value="工具"
+                placeholder="例如：开发"
+                class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              />
+              <datalist id="categoryOptions"></datalist>
+            </div>
+
+            <div>
+              <label for="icon" class="text-sm font-medium text-gray-700">图标（可选）</label>
+              <input
+                id="icon"
+                name="icon"
+                type="text"
+                maxlength="16"
+                placeholder="例如：🐙"
+                class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              />
+            </div>
+          </div>
+
+          <p id="linkStatus" class="min-h-5 text-sm" role="status" aria-live="polite"></p>
+
+          <button
+            id="saveButton"
+            type="submit"
+            class="w-full rounded-xl bg-indigo-600 px-4 py-3 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            保存链接
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <script>
+      const loadingPanel = document.querySelector("#loadingPanel");
+      const loginPanel = document.querySelector("#loginPanel");
+      const appPanel = document.querySelector("#appPanel");
+      const loginForm = document.querySelector("#loginForm");
+      const linkForm = document.querySelector("#linkForm");
+      const passwordInput = document.querySelector("#password");
+      const titleInput = document.querySelector("#title");
+      const urlInput = document.querySelector("#url");
+      const categoryInput = document.querySelector("#category");
+      const iconInput = document.querySelector("#icon");
+      const loginButton = document.querySelector("#loginButton");
+      const saveButton = document.querySelector("#saveButton");
+      const logoutButton = document.querySelector("#logoutButton");
+      const loginStatus = document.querySelector("#loginStatus");
+      const linkStatus = document.querySelector("#linkStatus");
+      const categoryOptions = document.querySelector("#categoryOptions");
+
+      function readCookie(name) {
+        const prefix = `${name}=`;
+        const item = document.cookie
+          .split(";")
+          .map((part) => part.trim())
+          .find((part) => part.startsWith(prefix));
+        return item ? item.slice(prefix.length) : "";
+      }
+
+      function setStatus(element, message, type = "error") {
+        element.textContent = message;
+        element.className = `min-h-5 text-sm ${type === "success" ? "text-emerald-600" : "text-red-600"}`;
+      }
+
+      async function responseError(response, fallback) {
+        try {
+          const data = await response.json();
+          return typeof data.error === "string" ? data.error : fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function showLogin(message = "") {
+        loadingPanel.classList.add("hidden");
+        appPanel.classList.add("hidden");
+        loginPanel.classList.remove("hidden");
+        passwordInput.focus();
+        if (message) setStatus(loginStatus, message);
+      }
+
+      function showApp() {
+        loadingPanel.classList.add("hidden");
+        loginPanel.classList.add("hidden");
+        appPanel.classList.remove("hidden");
+        loadCategoryOptions();
+        titleInput.focus();
+      }
+
+      async function checkSession() {
+        try {
+          const response = await fetch("/api/admin/session", {
+            credentials: "same-origin",
+            headers: { Accept: "application/json" }
+          });
+          const data = await response.json();
+          if (response.ok && data.authenticated === true) {
+            showApp();
+          } else {
+            showLogin();
+          }
+        } catch {
+          showLogin("无法连接后台服务，请稍后重试。");
+        }
+      }
+
+      async function loadCategoryOptions() {
+        try {
+          const response = await fetch("/api/links", {
+            credentials: "same-origin",
+            headers: { Accept: "application/json" }
+          });
+          if (!response.ok) return;
+
+          const links = await response.json();
+          if (!Array.isArray(links)) return;
+
+          const categories = [...new Set(
+            links
+              .map((link) => typeof link.category === "string" ? link.category.trim() : "")
+              .filter(Boolean)
+          )];
+
+          categoryOptions.replaceChildren(
+            ...categories.map((category) => {
+              const option = document.createElement("option");
+              option.value = category;
+              return option;
+            })
+          );
+        } catch {
+          // 分类提示不是录入的必要条件，失败时仍允许手动输入。
+        }
+      }
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setStatus(loginStatus, "");
+
+        if (!passwordInput.value) {
+          setStatus(loginStatus, "请输入管理密码。");
+          passwordInput.focus();
+          return;
+        }
+
+        loginButton.disabled = true;
+        loginButton.textContent = "登录中...";
+
+        try {
+          const response = await fetch("/api/admin/login", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json"
+            },
+            body: JSON.stringify({ password: passwordInput.value })
+          });
+
+          if (!response.ok) {
+            setStatus(loginStatus, await responseError(response, "登录失败。"));
+            passwordInput.select();
+            return;
+          }
+
+          passwordInput.value = "";
+          setStatus(loginStatus, "");
+          showApp();
+        } catch {
+          setStatus(loginStatus, "无法连接后台服务，请稍后重试。");
+        } finally {
+          loginButton.disabled = false;
+          loginButton.textContent = "登录";
+        }
+      });
+
+      linkForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setStatus(linkStatus, "");
+
+        if (!linkForm.reportValidity()) return;
+
+        const csrfToken = readCookie("__Host-admin_csrf");
+        if (!csrfToken) {
+          showLogin("登录已过期，请重新登录。");
+          return;
+        }
+
+        saveButton.disabled = true;
+        saveButton.textContent = "保存中...";
+
+        try {
+          const response = await fetch("/api/admin/links", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "X-CSRF-Token": csrfToken
+            },
+            body: JSON.stringify({
+              title: titleInput.value,
+              url: urlInput.value,
+              icon: iconInput.value,
+              category: categoryInput.value
+            })
+          });
+
+          if (response.status === 401) {
+            showLogin("登录已过期，请重新登录。");
+            return;
+          }
+
+          if (!response.ok) {
+            setStatus(linkStatus, await responseError(response, "保存失败。"));
+            return;
+          }
+
+          titleInput.value = "";
+          urlInput.value = "";
+          iconInput.value = "";
+          setStatus(linkStatus, "链接已保存，公开导航页将自动更新。", "success");
+          await loadCategoryOptions();
+          titleInput.focus();
+        } catch {
+          setStatus(linkStatus, "无法连接后台服务，请稍后重试。");
+        } finally {
+          saveButton.disabled = false;
+          saveButton.textContent = "保存链接";
+        }
+      });
+
+      logoutButton.addEventListener("click", async () => {
+        const csrfToken = readCookie("__Host-admin_csrf");
+        logoutButton.disabled = true;
+
+        try {
+          await fetch("/api/admin/logout", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              Accept: "application/json",
+              "X-CSRF-Token": csrfToken
+            }
+          });
+        } finally {
+          logoutButton.disabled = false;
+          showLogin("已退出登录。");
+        }
+      });
+
+      checkSession();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>我的导航</title>
+    <meta name="description" content="一个简洁的个人导航页" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: "#172033",
+              muted: "#718096",
+              canvas: "#f5f7fb"
+            },
+            boxShadow: {
+              card: "0 12px 35px rgba(31, 41, 55, 0.07)"
+            }
+          }
+        }
+      };
+    </script>
+
+    <style>
+      html {
+        background: #f5f7fb;
+      }
+
+      body {
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 15% 0%, rgba(99, 102, 241, 0.1), transparent 28rem),
+          #f5f7fb;
+      }
+
+      .hide-scrollbar {
+        scrollbar-width: none;
+      }
+
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body class="text-ink">
+    <div class="mx-auto min-h-screen max-w-6xl px-5 py-12 sm:px-8">
+      <header class="text-center">
+        <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-3xl text-white shadow-lg shadow-indigo-200">
+          ✦
+        </div>
+
+        <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">我的导航</h1>
+
+        <p id="summary" class="mt-3 text-sm text-muted">正在加载导航...</p>
+
+        <div class="relative mx-auto mt-8 max-w-xl">
+          <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m2.1-5.4a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" />
+            </svg>
+          </span>
+
+          <input
+            id="search"
+            type="search"
+            autocomplete="off"
+            placeholder="搜索网站..."
+            class="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-12 text-sm outline-none transition placeholder:text-gray-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+          />
+
+          <button id="clearSearch" type="button" aria-label="清空搜索" class="absolute inset-y-0 right-3 hidden items-center px-2 text-gray-400 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <nav id="categories" class="hide-scrollbar mt-10 flex gap-2 overflow-x-auto pb-2" aria-label="导航分类"></nav>
+
+      <main id="linkGrid" class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"></main>
+
+      <section id="emptyState" class="hidden py-20 text-center">
+        <div class="text-5xl">🔎</div>
+        <h2 class="mt-4 text-lg font-semibold">没有找到相关链接</h2>
+        <p class="mt-2 text-sm text-muted">尝试更换搜索关键词或分类</p>
+      </section>
+
+      <footer class="mt-16 text-center text-xs text-gray-400">Personal Navigation</footer>
+    </div>
+
+    <script>
+      const state = {
+        links: [],
+        category: "全部",
+        keyword: ""
+      };
+
+      const searchInput = document.querySelector("#search");
+      const clearSearch = document.querySelector("#clearSearch");
+      const categories = document.querySelector("#categories");
+      const linkGrid = document.querySelector("#linkGrid");
+      const emptyState = document.querySelector("#emptyState");
+      const summary = document.querySelector("#summary");
+
+      function isSafeUrl(value) {
+        try {
+          const url = new URL(value, window.location.origin);
+          return ["http:", "https:"].includes(url.protocol);
+        } catch {
+          return false;
+        }
+      }
+
+      function createCategoryButton(category) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = category;
+        button.className = "shrink-0 rounded-full px-4 py-2 text-sm transition";
+
+        if (category === state.category) {
+          button.className += " bg-indigo-600 text-white shadow-md shadow-indigo-200";
+        } else {
+          button.className += " bg-white text-gray-600 hover:bg-indigo-50 hover:text-indigo-600";
+        }
+
+        button.addEventListener("click", () => {
+          state.category = category;
+          renderCategories();
+          renderLinks();
+        });
+
+        return button;
+      }
+
+      function renderCategories() {
+        const categoryList = [
+          "全部",
+          ...new Set(state.links.map((link) => link.category || "其他").filter(Boolean))
+        ];
+
+        categories.replaceChildren(...categoryList.map(createCategoryButton));
+      }
+
+      function createLinkCard(link) {
+        const card = document.createElement("a");
+        card.href = link.url;
+        card.target = "_blank";
+        card.rel = "noopener noreferrer";
+        card.className = "group flex min-h-32 items-start gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-card transition hover:-translate-y-1 hover:border-indigo-100 hover:shadow-xl";
+
+        const icon = document.createElement("div");
+        icon.className = "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-2xl transition group-hover:bg-indigo-100";
+        icon.textContent = link.icon || "🔗";
+
+        const content = document.createElement("div");
+        content.className = "min-w-0 flex-1";
+
+        const title = document.createElement("h2");
+        title.className = "truncate font-semibold text-gray-800 group-hover:text-indigo-600";
+        title.textContent = link.title;
+
+        const category = document.createElement("p");
+        category.className = "mt-2 text-xs text-gray-400";
+        category.textContent = link.category || "其他";
+
+        const arrow = document.createElement("span");
+        arrow.className = "ml-2 text-gray-300 transition group-hover:translate-x-1 group-hover:text-indigo-500";
+        arrow.textContent = "→";
+
+        content.append(title, category);
+        card.append(icon, content, arrow);
+        return card;
+      }
+
+      function renderLinks() {
+        const keyword = state.keyword.trim().toLowerCase();
+
+        const filteredLinks = state.links.filter((link) => {
+          const matchCategory = state.category === "全部" || (link.category || "其他") === state.category;
+          const searchableText = [link.title, link.url, link.category].join(" ").toLowerCase();
+          return matchCategory && searchableText.includes(keyword);
+        });
+
+        linkGrid.replaceChildren(...filteredLinks.map(createLinkCard));
+        emptyState.classList.toggle("hidden", filteredLinks.length > 0);
+        summary.textContent = keyword
+          ? `找到 ${filteredLinks.length} 个结果`
+          : `共 ${state.links.length} 个导航链接`;
+      }
+
+      function updateClearButton() {
+        clearSearch.classList.toggle("hidden", searchInput.value.length === 0);
+        clearSearch.classList.toggle("flex", searchInput.value.length > 0);
+      }
+
+      async function loadLinks() {
+        try {
+          const response = await fetch("/api/links", {
+            headers: { Accept: "application/json" }
+          });
+
+          if (!response.ok) {
+            throw new Error("请求导航数据失败");
+          }
+
+          const data = await response.json();
+
+          state.links = Array.isArray(data)
+            ? data
+                .filter((link) => {
+                  return link && typeof link.title === "string" && typeof link.url === "string" && isSafeUrl(link.url);
+                })
+                .map((link) => ({
+                  title: link.title.trim(),
+                  url: link.url.trim(),
+                  icon: String(link.icon || "🔗"),
+                  category: String(link.category || "其他")
+                }))
+            : [];
+
+          renderCategories();
+          renderLinks();
+        } catch (error) {
+          console.error(error);
+          summary.textContent = "导航数据加载失败";
+          state.links = [];
+          renderLinks();
+        }
+      }
+
+      searchInput.addEventListener("input", (event) => {
+        state.keyword = event.target.value;
+        updateClearButton();
+        renderLinks();
+      });
+
+      clearSearch.addEventListener("click", () => {
+        searchInput.value = "";
+        state.keyword = "";
+        updateClearButton();
+        renderLinks();
+        searchInput.focus();
+      });
+
+      loadLinks();
+    </script>
+  </body>
+</html>
