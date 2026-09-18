@@ -22,7 +22,7 @@ personal-nav/
 | 功能 | 说明 |
 |------|------|
 | 公开导航页 | 分类筛选 + 关键词搜索，响应式设计 |
-| 后台管理 | 添加导航链接（需登录） |
+| 后台管理 | 添加、删除导航链接，导出和还原 JSON 备份（需登录） |
 | 数据存储 | Cloudflare D1（SQLite） |
 | 认证机制 | HMAC-SHA256 签名 Cookie + CSRF 保护 |
 | 边缘部署 | 无后端服务器，纯 Cloudflare Workers |
@@ -35,7 +35,10 @@ personal-nav/
 | `/api/admin/login` | POST | 登录 | 无 |
 | `/api/admin/session` | GET | 检查登录状态 | 无 |
 | `/api/admin/logout` | POST | 登出 | 需要 |
-| `/api/admin/links` | POST | 添加链接 | 需要 |
+| `/api/admin/backup` | GET | 导出导航链接 JSON 备份 | 需要 |
+| `/api/admin/restore` | POST | 完全替换并还原 JSON 备份 | 需要 + CSRF |
+| `/api/admin/links` | POST | 添加链接 | 需要 + CSRF |
+| `/api/admin/links/:id` | DELETE | 删除链接 | 需要 + CSRF |
 | `/` | GET | 公开导航页 | 无 |
 | `/admin` | GET | 后台管理页 | 无 |
 
@@ -157,6 +160,30 @@ wrangler deploy
 2. 输入管理密码登录
 3. 填写链接信息（标题、URL、分类、图标）
 4. 点击「保存链接」
+
+### 导出和还原备份
+
+1. 在 `/admin` 登录后，点击「导出备份」下载 JSON 文件，并妥善保存。
+2. 需要恢复时，点击「选择备份文件」并选择之前导出的 `.json` 文件。
+3. 点击「还原备份」并确认。还原会**完全替换**当前全部导航链接；文件校验失败或数据库写入失败时，现有数据不会更改。
+4. 备份格式版本为 `1`，最多支持 1000 个链接，文件大小上限为 2 MB。备份只包含标题、URL、图标和分类，恢复后由数据库重新生成 ID 和创建时间。
+
+备份文件示例：
+
+```json
+{
+  "version": 1,
+  "exportedAt": "2025-01-01T00:00:00.000Z",
+  "links": [
+    {
+      "title": "GitHub",
+      "url": "https://github.com/",
+      "icon": "🐙",
+      "category": "开发"
+    }
+  ]
+}
+```
 
 ### 数据库表结构
 

@@ -82,10 +82,51 @@
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="text-sm font-medium text-indigo-600">LINKS</p>
-            <h2 class="mt-2 text-2xl font-bold">添加导航链接</h2>
+            <h2 class="mt-2 text-2xl font-bold">管理导航链接</h2>
           </div>
           <button id="logoutButton" type="button" class="rounded-lg px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-800">退出登录</button>
         </div>
+
+        <section class="mt-6 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700">数据备份</h3>
+            <p class="mt-1 text-sm text-muted">导出 JSON 文件保存。还原备份会替换当前全部导航链接，请先确认文件内容。</p>
+          </div>
+          <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button
+              id="exportButton"
+              type="button"
+              class="rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              导出备份
+            </button>
+            <label class="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+              选择备份文件
+              <input id="restoreFile" type="file" accept="application/json,.json" class="hidden" />
+            </label>
+            <button
+              id="restoreButton"
+              type="button"
+              disabled
+              class="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              还原备份
+            </button>
+          </div>
+          <p id="backupStatus" class="mt-3 min-h-5 text-sm" role="status" aria-live="polite"></p>
+        </section>
+
+        <!-- 链接列表 -->
+        <div id="linksListPanel" class="mt-6">
+          <h3 class="text-lg font-semibold text-gray-700 mb-4">已有链接</h3>
+          <div id="linksList" class="space-y-3">
+            <p id="linksLoading" class="text-sm text-muted">加载中...</p>
+          </div>
+        </div>
+
+        <hr class="my-8 border-gray-100" />
+
+        <h2 class="text-xl font-bold">添加新链接</h2>
 
         <form id="linkForm" class="mt-8 space-y-5" novalidate>
           <div>
@@ -132,15 +173,53 @@
             </div>
 
             <div>
-              <label for="icon" class="text-sm font-medium text-gray-700">图标（可选）</label>
-              <input
+              <label for="icon" class="text-sm font-medium text-gray-700">图标</label>
+              <select
                 id="icon"
                 name="icon"
-                type="text"
-                maxlength="16"
-                placeholder="例如：🐙"
-                class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-              />
+                class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 bg-white"
+              >
+                <option value="🔗">🔗 链接</option>
+                <option value="🛠️">🛠️ 工具</option>
+                <option value="📦">📦 资源</option>
+                <option value="💻">💻 开发</option>
+                <option value="🌐">🌐 网站</option>
+                <option value="📖">📖 文档</option>
+                <option value="📚">📚 学习</option>
+                <option value="🎓">🎓 教育</option>
+                <option value="💰">💰 金融</option>
+                <option value="🛒">🛒 购物</option>
+                <option value="🎮">🎮 游戏</option>
+                <option value="🎬">🎬 视频</option>
+                <option value="🎵">🎵 音乐</option>
+                <option value="📷">📷 摄影</option>
+                <option value="🖼️">🖼️ 设计</option>
+                <option value="✏️">✏️ 写作</option>
+                <option value="📊">📊 数据</option>
+                <option value="☁️">☁️ 云服务</option>
+                <option value="🔒">🔒 安全</option>
+                <option value="📧">📧 邮箱</option>
+                <option value="💬">💬 社区</option>
+                <option value="📱">📱 应用</option>
+                <option value="🖥️">🖥️ 系统</option>
+                <option value="⚙️">⚙️ 设置</option>
+                <option value="🚀">🚀 启动</option>
+                <option value="⭐">⭐ 推荐</option>
+                <option value="🔥">🔥 热门</option>
+                <option value="💡">💡 提示</option>
+                <option value="📌">📌 置顶</option>
+                <option value="📁">📁 文件</option>
+                <option value="🐙">🐙 GitHub</option>
+                <option value="🐱">🐱 GitLab</option>
+                <option value="🔵">🔵 Vercel</option>
+                <option value="🟢">🟢 Netlify</option>
+                <option value="⚛️">⚛️ React</option>
+                <option value="💚">💚 Vue</option>
+                <option value="🐍">🐍 Python</option>
+                <option value="🦀">🦀 Rust</option>
+                <option value="☕">☕ Java</option>
+                <option value="🍃">🍃 Node</option>
+              </select>
             </div>
           </div>
 
@@ -174,6 +253,12 @@
       const loginStatus = document.querySelector("#loginStatus");
       const linkStatus = document.querySelector("#linkStatus");
       const categoryOptions = document.querySelector("#categoryOptions");
+      const linksList = document.querySelector("#linksList");
+      const linksLoading = document.querySelector("#linksLoading");
+      const exportButton = document.querySelector("#exportButton");
+      const restoreFile = document.querySelector("#restoreFile");
+      const restoreButton = document.querySelector("#restoreButton");
+      const backupStatus = document.querySelector("#backupStatus");
 
       function readCookie(name) {
         const prefix = `${name}=`;
@@ -211,8 +296,211 @@
         loginPanel.classList.add("hidden");
         appPanel.classList.remove("hidden");
         loadCategoryOptions();
+        loadLinksList();
         titleInput.focus();
       }
+
+      async function loadLinksList() {
+        linksLoading.textContent = "加载中...";
+        try {
+          const response = await fetch("/api/links", {
+            credentials: "same-origin",
+            headers: { Accept: "application/json" }
+          });
+          if (!response.ok) {
+            linksLoading.textContent = "加载失败，请刷新重试";
+            return;
+          }
+          const links = await response.json();
+          if (!Array.isArray(links) || links.length === 0) {
+            linksList.innerHTML = '<p class="text-sm text-muted">暂无链接，请添加</p>';
+            return;
+          }
+          linksList.innerHTML = links.map(link => `
+            <div class="flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="text-xl flex-shrink-0">${escapeHtml(link.icon || '🔗')}</span>
+                <div class="min-w-0">
+                  <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="font-medium text-ink hover:text-indigo-600 truncate block">${escapeHtml(link.title)}</a>
+                  <p class="text-xs text-muted truncate">${escapeHtml(link.url)}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-600">${escapeHtml(link.category)}</span>
+                <button type="button" class="delete-btn px-3 py-1.5 text-sm rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" data-id="${link.id}">删除</button>
+              </div>
+            </div>
+          `).join('');
+          document.querySelectorAll(".delete-btn").forEach(btn => {
+            btn.addEventListener("click", handleDeleteLink);
+          });
+        } catch {
+          linksLoading.textContent = "网络错误，请刷新重试";
+        }
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      async function handleDeleteLink(event) {
+        const btn = event.currentTarget;
+        const id = btn.dataset.id;
+        if (!confirm("确定要删除这个链接吗？")) return;
+        btn.disabled = true;
+        btn.textContent = "删除中...";
+        const csrfToken = readCookie("__Host-admin_csrf");
+        try {
+          const response = await fetch(`/api/admin/links/${id}`, {
+            method: "DELETE",
+            credentials: "same-origin",
+            headers: {
+              Accept: "application/json",
+              "X-CSRF-Token": csrfToken
+            }
+          });
+          if (response.status === 401) {
+            showLogin("登录已过期，请重新登录。");
+            return;
+          }
+          if (!response.ok) {
+            const data = await response.json();
+            alert(data.error || "删除失败");
+            btn.disabled = false;
+            btn.textContent = "删除";
+            return;
+          }
+          loadLinksList();
+          loadCategoryOptions();
+        } catch {
+          alert("网络错误，请重试");
+          btn.disabled = false;
+          btn.textContent = "删除";
+        }
+      }
+
+      async function exportBackup() {
+        exportButton.disabled = true;
+        exportButton.textContent = "导出中...";
+
+        try {
+          const response = await fetch("/api/admin/backup", {
+            credentials: "same-origin",
+            headers: { Accept: "application/json" }
+          });
+
+          if (response.status === 401) {
+            showLogin("登录已过期，请重新登录。");
+            return;
+          }
+          if (!response.ok) {
+            setStatus(backupStatus, await responseError(response, "导出失败。"));
+            return;
+          }
+
+          const blob = await response.blob();
+          const contentDisposition = response.headers.get("Content-Disposition") || "";
+          const filename = contentDisposition.match(/filename="([^"]+)"/i)?.[1]
+            || `personal-nav-backup-${new Date().toISOString().slice(0, 10)}.json`;
+          const downloadBlob = new Blob([String.fromCharCode(0xfeff), blob], {
+            type: "application/json;charset=utf-8"
+          });
+          const objectUrl = URL.createObjectURL(downloadBlob);
+          const link = document.createElement("a");
+          link.href = objectUrl;
+          link.download = filename;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+          setStatus(backupStatus, "备份已导出。", "success");
+        } catch {
+          setStatus(backupStatus, "无法连接后台服务，请稍后重试。");
+        } finally {
+          exportButton.disabled = false;
+          exportButton.textContent = "导出备份";
+        }
+      }
+
+      async function restoreBackup() {
+        const file = restoreFile.files?.[0];
+        if (!file) {
+          setStatus(backupStatus, "请先选择备份文件。");
+          return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          setStatus(backupStatus, "备份文件不能超过 2 MB。");
+          return;
+        }
+        if (!confirm(`还原“${file.name}”将删除当前全部导航链接，确定继续吗？`)) return;
+
+        exportButton.disabled = true;
+        restoreButton.disabled = true;
+        restoreButton.textContent = "还原中...";
+
+        try {
+          let backup;
+          try {
+            const text = await file.text();
+            backup = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+          } catch {
+            setStatus(backupStatus, "备份文件不是有效的 JSON。");
+            return;
+          }
+
+          const csrfToken = readCookie("__Host-admin_csrf");
+          if (!csrfToken) {
+            showLogin("登录已过期，请重新登录。");
+            return;
+          }
+
+          const response = await fetch("/api/admin/restore", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "X-CSRF-Token": csrfToken
+            },
+            body: JSON.stringify(backup)
+          });
+
+          if (response.status === 401) {
+            showLogin("登录已过期，请重新登录。");
+            return;
+          }
+          if (!response.ok) {
+            setStatus(backupStatus, await responseError(response, "还原失败，现有数据未更改。"));
+            return;
+          }
+
+          const result = await response.json();
+          setStatus(backupStatus, `备份已还原，共恢复 ${result.count} 个链接。`, "success");
+          restoreFile.value = "";
+          await Promise.all([loadCategoryOptions(), loadLinksList()]);
+        } catch {
+          setStatus(backupStatus, "无法连接后台服务，还原未完成。");
+        } finally {
+          exportButton.disabled = false;
+          restoreButton.disabled = !restoreFile.files?.length;
+          restoreButton.textContent = "还原备份";
+        }
+      }
+
+      restoreFile.addEventListener("change", () => {
+        const file = restoreFile.files?.[0];
+        restoreButton.disabled = !file;
+        if (file) {
+          setStatus(backupStatus, `已选择备份文件：${file.name}`, "success");
+        } else {
+          setStatus(backupStatus, "");
+        }
+      });
+
+      exportButton.addEventListener("click", exportBackup);
+      restoreButton.addEventListener("click", restoreBackup);
 
       async function checkSession() {
         try {
@@ -348,6 +636,7 @@
           iconInput.value = "";
           setStatus(linkStatus, "链接已保存，公开导航页将自动更新。", "success");
           await loadCategoryOptions();
+          await loadLinksList();
           titleInput.focus();
         } catch {
           setStatus(linkStatus, "无法连接后台服务，请稍后重试。");

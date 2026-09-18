@@ -2,6 +2,9 @@ const SESSION_COOKIE = "__Host-admin_session";
 const CSRF_COOKIE = "__Host-admin_csrf";
 const SESSION_TTL_SECONDS = 8 * 60 * 60;
 const MAX_JSON_BODY_BYTES = 16 * 1024;
+const MAX_BACKUP_JSON_BODY_BYTES = 2 * 1024 * 1024;
+const MAX_BACKUP_LINKS = 1000;
+const BACKUP_VERSION = 1;
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/u;
 
 const JSON_HEADERS = {
@@ -185,14 +188,14 @@ async function secureEqual(left, right) {
   return difference === 0;
 }
 
-async function readJson(request) {
+async function readJson(request, maxBytes = MAX_JSON_BODY_BYTES) {
   const contentLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > MAX_JSON_BODY_BYTES) {
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
     throw new RequestError("请求体过大", 413);
   }
 
   const body = await request.arrayBuffer();
-  if (body.byteLength > MAX_JSON_BODY_BYTES) {
+  if (body.byteLength > maxBytes) {
     throw new RequestError("请求体过大", 413);
   }
 
@@ -231,6 +234,10 @@ function textField(value, name, maxLength, { required = false, fallback } = {}) 
 }
 
 function validateLinkInput(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new RequestError("链接数据格式错误");
+  }
+
   const title = textField(data.title, "标题", 120, { required: true });
   const category = textField(data.category, "分类", 50, {
     fallback: "其他",
@@ -373,6 +380,129 @@ async function handleLogout(request, env) {
   );
 }
 
+async function handleBackup(request, env) {
+  if (request.method !== "GET") return methodNotAllowed("GET");
+
+  if (!(await isAuthenticated(request, env))) {
+    return json({ error: "未登录或登录已过期" }, 401);
+  }
+
+  try {
+    const { results = [] } = await env.DB.prepare(`
+      SELECT title, url, icon, category
+      FROM links
+      ORDER BY category COLLATE NOCASE, title COLLATE NOCASE
+    `).all();
+    const date = new Date().toISOString().slice(0, 10);
+
+    return json(
+      {
+        version: BACKUP_VERSION,
+        exportedAt: new Date().toISOString(),
+        links: results,
+      },
+      200,
+      {
+        "content-disposition": `attachment; filename="personal-nav-backup-${date}.json"`,
+        "x-content-type-options": "nosniff",
+      },
+    );
+  } catch (error) {
+    console.error("D1 backup query failed:", error);
+    return json({ error: "导出导航备份失败" }, 500);
+  }
+}
+
+async function handleRestore(request, env) {
+  if (request.method !== "POST") return methodNotAllowed("POST");
+
+  const errorResponse = await validateAdminMutation(request, env);
+  if (errorResponse) return errorResponse;
+
+  let data;
+  try {
+    data = await readJson(request, MAX_BACKUP_JSON_BODY_BYTES);
+  } catch (error) {
+    return json(
+      { error: error instanceof RequestError ? error.message : "请求格式错误" },
+      error instanceof RequestError ? error.status : 400,
+    );
+  }
+
+  if (data.version !== BACKUP_VERSION || !Array.isArray(data.links)) {
+    return json({ error: "备份文件格式或版本不受支持" }, 400);
+  }
+  if (data.links.length > MAX_BACKUP_LINKS) {
+    return json(
+      { error: `备份最多支持 ${MAX_BACKUP_LINKS} 个链接` },
+      400,
+    );
+  }
+
+  let links;
+  try {
+    links = data.links.map((link) => validateLinkInput(link));
+  } catch (error) {
+    return json(
+      { error: error instanceof RequestError ? error.message : "备份中的链接数据无效" },
+      error instanceof RequestError ? error.status : 400,
+    );
+  }
+
+  try {
+    const statements = [env.DB.prepare("DELETE FROM links")];
+    statements.push(
+      ...links.map((link) =>
+        env.DB.prepare(`
+          INSERT INTO links (title, url, icon, category)
+          VALUES (?, ?, ?, ?)
+        `).bind(link.title, link.url, link.icon, link.category),
+      ),
+    );
+
+    await env.DB.batch(statements);
+    return json({ success: true, count: links.length });
+  } catch (error) {
+    console.error("D1 restore failed:", error);
+    return json({ error: "还原导航备份失败，原有数据未更改" }, 500);
+  }
+}
+
+async function handleDeleteLink(request, env) {
+  if (request.method !== "DELETE") return methodNotAllowed("DELETE");
+
+  const errorResponse = await validateAdminMutation(request, env);
+  if (errorResponse) return errorResponse;
+
+  const { pathname } = new URL(request.url);
+  const idMatch = pathname.match(/^\/api\/admin\/links\/(\d+)$/);
+  if (!idMatch) {
+    return json({ error: "无效的链接 ID" }, 400);
+  }
+
+  const id = Number(idMatch[1]);
+  if (!Number.isFinite(id) || id <= 0) {
+    return json({ error: "无效的链接 ID" }, 400);
+  }
+
+  try {
+    const result = await env.DB.prepare(`
+      DELETE FROM links WHERE id = ?
+    `)
+      .bind(id)
+      .run();
+
+    if (result.meta?.changes === 0) {
+      return json({ error: "链接不存在" }, 404);
+    }
+
+    return json({ success: true }, 200);
+  } catch (error) {
+    console.error("D1 delete failed:", error);
+    return json({ error: "删除链接失败" }, 500);
+  }
+}
+
 async function handleCreateLink(request, env) {
   if (request.method !== "POST") return methodNotAllowed("POST");
 
@@ -436,8 +566,17 @@ export default {
     if (pathname === "/api/admin/logout") {
       return handleLogout(request, env);
     }
+    if (pathname === "/api/admin/backup") {
+      return handleBackup(request, env);
+    }
+    if (pathname === "/api/admin/restore") {
+      return handleRestore(request, env);
+    }
     if (pathname === "/api/admin/links") {
       return handleCreateLink(request, env);
+    }
+    if (pathname.startsWith("/api/admin/links/")) {
+      return handleDeleteLink(request, env);
     }
     if (pathname.startsWith("/api/")) {
       return json({ error: "Not Found" }, 404);
