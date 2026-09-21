@@ -2,6 +2,10 @@ name = "personal-nav"
 main = "src/worker.js"
 compatibility_date = "2025-01-01"
 
+[vars]
+# 添加你的域名到可信来源列表，多个用逗号分隔
+# TRUSTED_ORIGINS = "https://nav.yourdomain.com"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"

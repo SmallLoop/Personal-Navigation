@@ -67,9 +67,27 @@ function cookie(name, value, maxAge, { httpOnly = false } = {}) {
   return `${name}=${value}; ${attributes.join("; ")}`;
 }
 
-function sameOrigin(request) {
+function getTrustedOrigins(env) {
+  if (typeof env.TRUSTED_ORIGINS === "string" && env.TRUSTED_ORIGINS) {
+    return env.TRUSTED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function sameOrigin(request, env = {}) {
   const origin = request.headers.get("Origin");
-  return origin !== null && origin === new URL(request.url).origin;
+  const urlOrigin = new URL(request.url).origin;
+
+  if (origin === null) return false;
+  if (origin === urlOrigin) return true;
+
+  // 允许信任的代理域名
+  const trustedOrigins = getTrustedOrigins(env);
+  if (trustedOrigins.length > 0 && trustedOrigins.includes(origin)) {
+    return true;
+  }
+
+  return false;
 }
 
 function getAdminSecret(env) {
@@ -278,7 +296,7 @@ async function isAuthenticated(request, env) {
 }
 
 async function validateAdminMutation(request, env) {
-  if (!sameOrigin(request)) {
+  if (!sameOrigin(request, env)) {
     return json({ error: "请求来源不受信任" }, 403);
   }
 
@@ -314,7 +332,7 @@ async function handlePublicLinks(request, env) {
 
 async function handleLogin(request, env) {
   if (request.method !== "POST") return methodNotAllowed("POST");
-  if (!sameOrigin(request)) return json({ error: "请求来源不受信任" }, 403);
+  if (!sameOrigin(request, env)) return json({ error: "请求来源不受信任" }, 403);
   const adminSecret = getAdminSecret(env);
   if (!adminSecret) {
     return json({ error: "后台密码尚未配置" }, 503);
