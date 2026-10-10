@@ -1,2 +1,12 @@
 .dev.vars
 .wrangler/
+node_modules/
+.env
+.env.*
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+dist/
+.vscode/
+.idea/

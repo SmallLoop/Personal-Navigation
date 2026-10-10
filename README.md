@@ -7,10 +7,12 @@
 ```
 personal-nav/
 ├── migrations/          # D1 数据库迁移脚本
-│   └── 0001_init.sql   # 初始化表结构
+│   ├── 0001_init.sql    # 初始化表结构
+│   └── 0002_add_login_attempts.sql  # 登录尝试记录表
 ├── public/              # 静态资源（Cloudflare Assets）
 │   ├── index.html       # 公开导航页
-│   └── admin.html       # 后台管理页
+│   ├── admin.html       # 后台管理页
+│   └── tailwindcss.js  # 本地 Tailwind CSS
 ├── src/
 │   └── worker.js        # Cloudflare Worker 后端
 ├── wrangler.toml        # Wrangler 配置文件
@@ -135,6 +137,10 @@ wrangler d1 migrations apply personal-nav-db --local
 wrangler d1 migrations apply personal-nav-db --remote
 ```
 
+**注意**：首次部署需要执行两次迁移：
+1. `0001_init.sql` - 创建 links 表
+2. `0002_add_login_attempts.sql` - 创建登录尝试记录表（用于速率限制）
+
 ### 6. 部署到 Cloudflare Workers
 
 ```bash
@@ -199,6 +205,16 @@ CREATE TABLE links (
 
 CREATE INDEX idx_links_category ON links(category);
 CREATE INDEX idx_links_title ON links(title);
+
+-- 登录尝试记录（用于速率限制）
+CREATE TABLE login_attempts (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip_hash     TEXT NOT NULL,        -- 客户端 IP 的哈希值
+  attempted_at INTEGER NOT NULL,     -- 尝试时间戳
+  success     INTEGER NOT NULL DEFAULT 0  -- 是否成功
+);
+
+CREATE INDEX idx_login_attempts_ip ON login_attempts(ip_hash, attempted_at);
 ```
 
 ### 手动管理数据
@@ -302,6 +318,8 @@ wrangler tail
 | HttpOnly | Session Cookie 设置 HttpOnly 防止 XSS |
 | SameSite | Cookie 设置 SameSite=Strict |
 | Secure | 仅在 HTTPS 下传输 Cookie |
+| 登录速率限制 | 15 分钟内最多 5 次失败尝试，防暴力破解 |
+| 本地 CDN | Tailwind CSS 下载到本地，消除供应链攻击风险 |
 
 **注意**：由于使用 `__Host-` 前缀 Cookie，本项目必须通过 HTTPS 访问。
 

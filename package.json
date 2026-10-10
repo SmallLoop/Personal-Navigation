@@ -1,0 +1,25 @@
+{
+  "name": "personal-nav",
+  "version": "1.0.0",
+  "description": "基于 Cloudflare Workers + D1 的轻量级个人导航页，支持后台管理。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SmallLoop/Personal-Navigation.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SmallLoop/Personal-Navigation/issues"
+  },
+  "homepage": "https://github.com/SmallLoop/Personal-Navigation#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.29",
+    "tailwindcss": "^3.4.19"
+  }
+}
