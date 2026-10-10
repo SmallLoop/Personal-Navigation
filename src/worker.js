@@ -547,6 +547,20 @@ async function handleCreateLink(request, env) {
     );
   }
 
+  // 检查标题和链接是否已存在
+  try {
+    const existing = await env.DB.prepare(`
+      SELECT id FROM links WHERE title = ? COLLATE NOCASE AND url = ?
+    `).bind(link.title, link.url).first();
+
+    if (existing) {
+      return json({ error: "该链接已存在" }, 409);
+    }
+  } catch (error) {
+    console.error("D1 duplicate check failed:", error);
+    return json({ error: "检查链接重复时出错" }, 500);
+  }
+
   try {
     const result = await env.DB.prepare(`
       INSERT INTO links (title, url, icon, category)
@@ -565,6 +579,99 @@ async function handleCreateLink(request, env) {
   } catch (error) {
     console.error("D1 insert failed:", error);
     return json({ error: "保存导航链接失败" }, 500);
+  }
+}
+
+// 后台专用：按标题首字母排序获取所有链接
+async function handleAdminLinks(request, env) {
+  if (request.method !== "GET") return methodNotAllowed("GET");
+
+  // 只检查登录状态，不要求 CSRF（因为只是读取数据）
+  if (!(await isAuthenticated(request, env))) {
+    return json({ error: "未登录或登录已过期" }, 401);
+  }
+
+  try {
+    const { results = [] } = await env.DB.prepare(`
+      SELECT id, title, url, icon, category
+      FROM links
+      ORDER BY title COLLATE NOCASE
+    `).all();
+
+    return json(results);
+  } catch (error) {
+    console.error("D1 admin links query failed:", error);
+    return json({ error: "读取链接列表失败" }, 500);
+  }
+}
+
+async function handleUpdateLink(request, env) {
+  if (request.method !== "PUT") return methodNotAllowed("PUT");
+
+  const errorResponse = await validateAdminMutation(request, env);
+  if (errorResponse) return errorResponse;
+
+  const { pathname } = new URL(request.url);
+  const idMatch = pathname.match(/^\/api\/admin\/links\/(\d+)$/);
+  if (!idMatch) {
+    return json({ error: "无效的链接 ID" }, 400);
+  }
+
+  const id = Number(idMatch[1]);
+  if (!Number.isFinite(id) || id <= 0) {
+    return json({ error: "无效的链接 ID" }, 400);
+  }
+
+  let data;
+  try {
+    data = await readJson(request);
+  } catch (error) {
+    return json(
+      { error: error instanceof RequestError ? error.message : "请求格式错误" },
+      error instanceof RequestError ? error.status : 400,
+    );
+  }
+
+  let link;
+  try {
+    link = validateLinkInput(data);
+  } catch (error) {
+    return json(
+      { error: error instanceof RequestError ? error.message : "链接数据无效" },
+      error instanceof RequestError ? error.status : 400,
+    );
+  }
+
+  // 检查标题和链接是否被其他链接使用（排除当前链接）
+  try {
+    const existing = await env.DB.prepare(`
+      SELECT id FROM links WHERE title = ? COLLATE NOCASE AND url = ? AND id != ?
+    `).bind(link.title, link.url, id).first();
+
+    if (existing) {
+      return json({ error: "该链接已存在" }, 409);
+    }
+  } catch (error) {
+    console.error("D1 duplicate check failed:", error);
+    return json({ error: "检查链接重复时出错" }, 500);
+  }
+
+  try {
+    const result = await env.DB.prepare(`
+      UPDATE links SET title = ?, url = ?, icon = ?, category = ?
+      WHERE id = ?
+    `)
+      .bind(link.title, link.url, link.icon, link.category, id)
+      .run();
+
+    if (result.meta?.changes === 0) {
+      return json({ error: "链接不存在" }, 404);
+    }
+
+    return json({ id, ...link });
+  } catch (error) {
+    console.error("D1 update failed:", error);
+    return json({ error: "更新链接失败" }, 500);
   }
 }
 
@@ -593,8 +700,17 @@ export default {
     if (pathname === "/api/admin/links") {
       return handleCreateLink(request, env);
     }
+    if (pathname === "/api/admin/links/all") {
+      return handleAdminLinks(request, env);
+    }
     if (pathname.startsWith("/api/admin/links/")) {
-      return handleDeleteLink(request, env);
+      if (request.method === "PUT") {
+        return handleUpdateLink(request, env);
+      }
+      if (request.method === "DELETE") {
+        return handleDeleteLink(request, env);
+      }
+      return methodNotAllowed("PUT, DELETE");
     }
     if (pathname.startsWith("/api/")) {
       return json({ error: "Not Found" }, 404);

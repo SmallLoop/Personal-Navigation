@@ -233,6 +233,116 @@
             保存链接
           </button>
         </form>
+
+        <!-- 编辑链接模态框 -->
+        <div id="editModal" class="fixed inset-0 z-50 hidden">
+          <div class="absolute inset-0 bg-black/50" id="editModalOverlay"></div>
+          <div class="absolute left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gray-100 bg-white p-6 shadow-xl sm:p-8">
+            <div class="mb-6 flex items-center justify-between">
+              <h3 class="text-xl font-bold">编辑链接</h3>
+              <button type="button" id="closeEditModal" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <form id="editForm" class="space-y-5" novalidate>
+              <input type="hidden" id="editId" />
+              <div>
+                <label for="editTitle" class="text-sm font-medium text-gray-700">标题</label>
+                <input
+                  id="editTitle"
+                  type="text"
+                  maxlength="120"
+                  required
+                  placeholder="例如：GitHub"
+                  class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label for="editUrl" class="text-sm font-medium text-gray-700">链接地址</label>
+                <input
+                  id="editUrl"
+                  type="url"
+                  maxlength="2048"
+                  required
+                  placeholder="https://github.com"
+                  class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                />
+              </div>
+              <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label for="editCategory" class="text-sm font-medium text-gray-700">分类</label>
+                  <input
+                    id="editCategory"
+                    type="text"
+                    maxlength="50"
+                    required
+                    list="categoryOptions"
+                    placeholder="例如：开发"
+                    class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                  />
+                </div>
+                <div>
+                  <label for="editIcon" class="text-sm font-medium text-gray-700">图标</label>
+                  <select
+                    id="editIcon"
+                    class="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 bg-white"
+                  >
+                    <option value="🔗">🔗 链接</option>
+                    <option value="🛠️">🛠️ 工具</option>
+                    <option value="📦">📦 资源</option>
+                    <option value="💻">💻 开发</option>
+                    <option value="🌐">🌐 网站</option>
+                    <option value="📖">📖 文档</option>
+                    <option value="📚">📚 学习</option>
+                    <option value="🎓">🎓 教育</option>
+                    <option value="💰">💰 金融</option>
+                    <option value="🛒">🛒 购物</option>
+                    <option value="🎮">🎮 游戏</option>
+                    <option value="🎬">🎬 视频</option>
+                    <option value="🎵">🎵 音乐</option>
+                    <option value="📷">📷 摄影</option>
+                    <option value="🖼️">🖼️ 设计</option>
+                    <option value="✏️">✏️ 写作</option>
+                    <option value="📊">📊 数据</option>
+                    <option value="☁️">☁️ 云服务</option>
+                    <option value="🔒">🔒 安全</option>
+                    <option value="📧">📧 邮箱</option>
+                    <option value="💬">💬 社区</option>
+                    <option value="📱">📱 应用</option>
+                    <option value="🖥️">🖥️ 系统</option>
+                    <option value="⚙️">⚙️ 设置</option>
+                    <option value="🚀">🚀 启动</option>
+                    <option value="⭐">⭐ 推荐</option>
+                    <option value="🔥">🔥 热门</option>
+                    <option value="💡">💡 提示</option>
+                    <option value="📌">📌 置顶</option>
+                    <option value="📁">📁 文件</option>
+                    <option value="🐙">🐙 GitHub</option>
+                    <option value="🐱">🐱 GitLab</option>
+                    <option value="🔵">🔵 Vercel</option>
+                    <option value="🟢">🟢 Netlify</option>
+                    <option value="⚛️">⚛️ React</option>
+                    <option value="💚">💚 Vue</option>
+                    <option value="🐍">🐍 Python</option>
+                    <option value="🦀">🦀 Rust</option>
+                    <option value="☕">☕ Java</option>
+                    <option value="🍃">🍃 Node</option>
+                  </select>
+                </div>
+              </div>
+              <p id="editStatus" class="min-h-5 text-sm" role="status" aria-live="polite"></p>
+              <button
+                id="updateButton"
+                type="submit"
+                class="w-full rounded-xl bg-indigo-600 px-4 py-3 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                保存修改
+              </button>
+            </form>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -303,10 +413,14 @@
       async function loadLinksList() {
         linksLoading.textContent = "加载中...";
         try {
-          const response = await fetch("/api/links", {
+          const response = await fetch("/api/admin/links/all", {
             credentials: "same-origin",
             headers: { Accept: "application/json" }
           });
+          if (response.status === 401) {
+            showLogin("登录已过期，请重新登录。");
+            return;
+          }
           if (!response.ok) {
             linksLoading.textContent = "加载失败，请刷新重试";
             return;
@@ -327,12 +441,16 @@
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
                 <span class="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-600">${escapeHtml(link.category)}</span>
+                <button type="button" class="edit-btn px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition" data-id="${link.id}" data-title="${escapeHtml(link.title)}" data-url="${escapeHtml(link.url)}" data-icon="${escapeHtml(link.icon || '🔗')}" data-category="${escapeHtml(link.category)}">编辑</button>
                 <button type="button" class="delete-btn px-3 py-1.5 text-sm rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" data-id="${link.id}">删除</button>
               </div>
             </div>
           `).join('');
           document.querySelectorAll(".delete-btn").forEach(btn => {
             btn.addEventListener("click", handleDeleteLink);
+          });
+          document.querySelectorAll(".edit-btn").forEach(btn => {
+            btn.addEventListener("click", handleEditLink);
           });
         } catch {
           linksLoading.textContent = "网络错误，请刷新重试";
@@ -344,6 +462,108 @@
         div.textContent = str;
         return div.innerHTML;
       }
+
+      // 编辑相关变量和函数
+      const editModal = document.querySelector("#editModal");
+      const editModalOverlay = document.querySelector("#editModalOverlay");
+      const closeEditModal = document.querySelector("#closeEditModal");
+      const editForm = document.querySelector("#editForm");
+      const editId = document.querySelector("#editId");
+      const editTitle = document.querySelector("#editTitle");
+      const editUrl = document.querySelector("#editUrl");
+      const editCategory = document.querySelector("#editCategory");
+      const editIcon = document.querySelector("#editIcon");
+      const editStatus = document.querySelector("#editStatus");
+      const updateButton = document.querySelector("#updateButton");
+
+      function openEditModal(link) {
+        editId.value = link.id;
+        editTitle.value = link.title;
+        editUrl.value = link.url;
+        editCategory.value = link.category;
+        editIcon.value = link.icon;
+        editStatus.textContent = "";
+        editModal.classList.remove("hidden");
+        editTitle.focus();
+      }
+
+      function closeEditModalFn() {
+        editModal.classList.add("hidden");
+        editForm.reset();
+      }
+
+      closeEditModal.addEventListener("click", closeEditModalFn);
+      editModalOverlay.addEventListener("click", closeEditModalFn);
+
+      function handleEditLink(event) {
+        const btn = event.currentTarget;
+        openEditModal({
+          id: btn.dataset.id,
+          title: btn.dataset.title,
+          url: btn.dataset.url,
+          icon: btn.dataset.icon,
+          category: btn.dataset.category
+        });
+      }
+
+      editForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!editForm.reportValidity()) return;
+
+        const csrfToken = readCookie("__Host-admin_csrf");
+        if (!csrfToken) {
+          showLogin("登录已过期，请重新登录。");
+          return;
+        }
+
+        updateButton.disabled = true;
+        updateButton.textContent = "保存中...";
+
+        try {
+          const response = await fetch(`/api/admin/links/${editId.value}`, {
+            method: "PUT",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "X-CSRF-Token": csrfToken
+            },
+            body: JSON.stringify({
+              title: editTitle.value,
+              url: editUrl.value,
+              icon: editIcon.value,
+              category: editCategory.value
+            })
+          });
+
+          if (response.status === 401) {
+            closeEditModalFn();
+            showLogin("登录已过期，请重新登录。");
+            return;
+          }
+
+          if (response.status === 409) {
+            editStatus.textContent = "该链接已存在";
+            editStatus.className = "min-h-5 text-sm text-red-600";
+            return;
+          }
+
+          if (!response.ok) {
+            editStatus.textContent = await responseError(response, "更新失败。");
+            editStatus.className = "min-h-5 text-sm text-red-600";
+            return;
+          }
+
+          closeEditModalFn();
+          await loadLinksList();
+        } catch {
+          editStatus.textContent = "网络错误，请重试";
+          editStatus.className = "min-h-5 text-sm text-red-600";
+        } finally {
+          updateButton.disabled = false;
+          updateButton.textContent = "保存修改";
+        }
+      });
 
       async function handleDeleteLink(event) {
         const btn = event.currentTarget;
@@ -623,6 +843,11 @@
 
           if (response.status === 401) {
             showLogin("登录已过期，请重新登录。");
+            return;
+          }
+
+          if (response.status === 409) {
+            setStatus(linkStatus, "该链接已存在，请勿重复添加。");
             return;
           }
 
